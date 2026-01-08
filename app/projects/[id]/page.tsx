@@ -273,27 +273,29 @@ export default function ProjectDetailPage({
   return (
     <div className="h-[calc(100vh-3rem)] flex flex-col bg-background">
       {/* Top Bar */}
-      <div className="px-6 py-3 border-b flex items-center justify-between bg-background/80 backdrop-blur-sm">
-        <div className="flex items-center gap-2 text-sm">
-          <Link
-            href="/projects"
-            className="text-muted-foreground hover:text-foreground transition-colors font-medium"
-          >
-            Projects
-          </Link>
-          <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
-          <span className="font-semibold">{project.name}</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="h-9 w-9">
-            <Settings className="h-4 w-4" />
-          </Button>
+      <div className="border-b bg-background/80 backdrop-blur-sm">
+        <div className="container mx-auto px-4 py-3 max-w-7xl flex items-center justify-between">
+          <div className="flex items-center gap-2 text-sm">
+            <Link
+              href="/projects"
+              className="text-muted-foreground hover:text-foreground transition-colors font-medium"
+            >
+              Projects
+            </Link>
+            <ChevronRight className="h-4 w-4 text-muted-foreground/50" />
+            <span className="font-semibold">{project.name}</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="h-9 w-9">
+              <Settings className="h-4 w-4" />
+            </Button>
+          </div>
         </div>
       </div>
 
       {/* Header */}
-      <div className="px-8 py-6 border-b bg-gradient-to-b from-muted/30 to-transparent">
-        <div className="max-w-6xl">
+      <div className="border-b bg-gradient-to-b from-muted/30 to-transparent">
+        <div className="container mx-auto px-4 py-6 max-w-7xl">
           <div className="flex items-start justify-between">
             <div>
               <div className="flex items-center gap-3 mb-2">
@@ -337,63 +339,65 @@ export default function ProjectDetailPage({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 overflow-hidden flex">
-        {/* Task List */}
-        <div className="flex-1 overflow-y-auto">
-          <div className="p-6 max-w-4xl">
-            {/* Search */}
-            <div className="relative mb-6">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <Input
-                placeholder="Search tasks..."
-                className="pl-10 bg-muted/50"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-              />
-            </div>
+      <div className="flex-1 overflow-hidden">
+        <div className="container mx-auto px-4 max-w-7xl h-full flex">
+          {/* Task List */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="py-6 pr-6">
+              {/* Search */}
+              <div className="relative mb-6">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search tasks..."
+                  className="pl-10 bg-muted/50"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+              </div>
 
-            {/* Tasks */}
-            {isLoadingTasks ? (
-              <div className="flex items-center justify-center py-16">
-                <div className="animate-pulse text-muted-foreground">
-                  Loading tasks...
-                </div>
-              </div>
-            ) : filteredTasks.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 text-center">
-                <FolderOpen className="h-12 w-12 text-muted-foreground/50 mb-4" />
-                <h3 className="font-semibold">No tasks yet</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Create your first task to get started
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-3">
-                {filteredTasks.map((task) => (
-                  <TaskCard
-                    key={task._id}
-                    task={task}
-                    onClick={() => handleTaskClick(task)}
-                    onDelete={handleTaskDeleted}
-                  />
-                ))}
-                {hasMore && (
-                  <div className="flex justify-center pt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => loadTasks(cursor)}
-                    >
-                      Load More
-                    </Button>
+              {/* Tasks */}
+              {isLoadingTasks ? (
+                <div className="flex items-center justify-center py-16">
+                  <div className="animate-pulse text-muted-foreground">
+                    Loading tasks...
                   </div>
-                )}
-              </div>
-            )}
+                </div>
+              ) : filteredTasks.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <FolderOpen className="h-12 w-12 text-muted-foreground/50 mb-4" />
+                  <h3 className="font-semibold">No tasks yet</h3>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Create your first task to get started
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {filteredTasks.map((task) => (
+                    <TaskCard
+                      key={task._id}
+                      task={task}
+                      onClick={() => handleTaskClick(task)}
+                      onDelete={handleTaskDeleted}
+                    />
+                  ))}
+                  {hasMore && (
+                    <div className="flex justify-center pt-4">
+                      <Button
+                        variant="outline"
+                        onClick={() => loadTasks(cursor)}
+                      >
+                        Load More
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Members Sidebar */}
-        <MembersSidebar members={project.members} createdBy={project.createdBy} />
+          {/* Members Sidebar */}
+          <MembersSidebar members={project.members} createdBy={project.createdBy} />
+        </div>
       </div>
 
       {/* Task Detail Sheet */}
