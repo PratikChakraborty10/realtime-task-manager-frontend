@@ -23,6 +23,7 @@ import type { Project, Member } from "@/components/project-card";
 import { TaskCard, Task } from "@/components/task-card";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { TaskDetailSheet } from "@/components/task-detail-sheet";
+import { useTaskUpdates } from "@/hooks/useSocket";
 
 interface ProjectDetailResponse {
   success: boolean;
@@ -185,12 +186,34 @@ export default function ProjectDetailPage({
     setTasks((prev) => [task, ...prev]);
   };
 
-  const handleTaskUpdated = (updatedTask: Task) => {
+  const handleTaskUpdated = useCallback((updatedTask: Task) => {
     setTasks((prev) =>
       prev.map((t) => (t._id === updatedTask._id ? updatedTask : t))
     );
-    setSelectedTask(updatedTask);
-  };
+    // Update selected task if it's the one being updated
+    setSelectedTask((current) =>
+      current?._id === updatedTask._id ? updatedTask : current
+    );
+  }, []);
+
+  // Real-time task updates via WebSocket
+  useTaskUpdates(id, {
+    onTaskCreated: (task) => {
+      // Add new task to top of list (avoid duplicates)
+      setTasks((prev) => {
+        if (prev.some((t) => t._id === task._id)) return prev;
+        return [task, ...prev];
+      });
+    },
+    onTaskUpdated: handleTaskUpdated,
+    onTaskDeleted: (taskId) => {
+      setTasks((prev) => prev.filter((t) => t._id !== taskId));
+      if (selectedTask?._id === taskId) {
+        setIsSheetOpen(false);
+        setSelectedTask(null);
+      }
+    },
+  });
 
   const handleTaskDeleted = async (taskId: string) => {
     const response = await fetchData(`/api/projects/${id}/tasks/${taskId}`, {

@@ -9,6 +9,7 @@ import {
   useEffect,
 } from "react";
 import { getAccessToken, removeAccessToken } from "@/lib/cookies";
+import { connectSocket, disconnectSocket } from "@/lib/socket";
 
 interface User {
   id: string;
@@ -43,6 +44,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .then((data) => {
           if (data.success && data.user) {
             setUser(data.user);
+            // Connect socket when user is authenticated
+            connectSocket(token);
           }
         })
         .catch(() => {
@@ -59,11 +62,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const login = useCallback((userData: User) => {
     setUser(userData);
+    // Connect socket on login
+    const token = getAccessToken();
+    if (token) {
+      connectSocket(token);
+    }
   }, []);
 
   const logout = useCallback(() => {
     setUser(null);
     removeAccessToken();
+    // Disconnect socket on logout
+    disconnectSocket();
   }, []);
 
   const isAuthenticated = user !== null;

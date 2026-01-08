@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { useFetch } from "@/hooks/useFetch";
 import { useAuth } from "@/context/auth-context";
+import { useCommentUpdates } from "@/hooks/useSocket";
 import type { Task } from "@/components/task-card";
 import type { Member } from "@/components/project-card";
 
@@ -155,6 +156,22 @@ export function TaskDetailSheet({
       scrollToBottom();
     }
   }, [comments]);
+
+  // Real-time comment updates via WebSocket
+  useCommentUpdates(open && task ? task._id : null, {
+    onCommentCreated: (comment) => {
+      setComments((prev) => [...prev, comment]);
+      setTimeout(scrollToBottom, 100);
+    },
+    onCommentUpdated: (comment) => {
+      setComments((prev) =>
+        prev.map((c) => (c._id === comment._id ? comment : c))
+      );
+    },
+    onCommentDeleted: (commentId) => {
+      setComments((prev) => prev.filter((c) => c._id !== commentId));
+    },
+  });
 
   const handleStatusChange = async (status: Task["status"]) => {
     if (!task) return;
