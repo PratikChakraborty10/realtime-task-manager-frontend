@@ -60,25 +60,10 @@ interface TaskDetailSheetProps {
   members: Member[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onTaskUpdated: (task: Task) => void;
 }
 
-interface TaskUpdateResponse {
-  success: boolean;
-  message: string;
-  task: Task;
-}
-
-interface CommentAddResponse {
-  success: boolean;
-  message: string;
-  comment: Comment;
-}
-
-interface DeleteResponse {
-  success: boolean;
-  message: string;
-}
+// Note: TaskUpdateResponse, CommentAddResponse, DeleteResponse interfaces removed
+// since we no longer process API responses locally - WebSocket handles all updates
 
 const statusConfig: Record<Task["status"], { label: string; dotColor: string }> = {
   OPEN: { label: "Open", dotColor: "bg-slate-500" },
@@ -114,7 +99,6 @@ export function TaskDetailSheet({
   members,
   open,
   onOpenChange,
-  onTaskUpdated,
 }: TaskDetailSheetProps) {
   const { user } = useAuth();
   const [comments, setComments] = useState<Comment[]>([]);
@@ -176,20 +160,19 @@ export function TaskDetailSheet({
   const handleStatusChange = async (status: Task["status"]) => {
     if (!task) return;
     setIsUpdating(true);
-    const response = (await fetchData(
+    // Just make the API call - WebSocket task:updated will sync the change
+    await fetchData(
       `/api/projects/${projectId}/tasks/${task._id}`,
       { method: "PATCH", body: JSON.stringify({ status }) }
-    )) as TaskUpdateResponse | null;
-    if (response?.success && response.task) {
-      onTaskUpdated(response.task);
-    }
+    );
     setIsUpdating(false);
   };
 
   const handleAssigneeChange = async (assigneeId: string) => {
     if (!task) return;
     setIsUpdating(true);
-    const response = (await fetchData(
+    // Just make the API call - WebSocket task:updated will sync the change
+    await fetchData(
       `/api/projects/${projectId}/tasks/${task._id}`,
       {
         method: "PATCH",
@@ -197,10 +180,7 @@ export function TaskDetailSheet({
           assignee: assigneeId === "unassigned" ? null : assigneeId,
         }),
       }
-    )) as TaskUpdateResponse | null;
-    if (response?.success && response.task) {
-      onTaskUpdated(response.task);
-    }
+    );
     setIsUpdating(false);
   };
 
@@ -208,25 +188,20 @@ export function TaskDetailSheet({
     e.preventDefault();
     if (!task || !newComment.trim()) return;
     setIsSubmittingComment(true);
-    const response = (await fetchData(`/api/tasks/${task._id}/comments`, {
+    // Just make the API call - WebSocket comment:created will sync the change
+    await fetchData(`/api/tasks/${task._id}/comments`, {
       method: "POST",
       body: JSON.stringify({ content: newComment.trim() }),
-    })) as CommentAddResponse | null;
-    if (response?.success && response.comment) {
-      setComments((prev) => [...prev, response.comment]);
-      setNewComment("");
-      setTimeout(scrollToBottom, 100);
-    }
+    });
+    setNewComment("");
     setIsSubmittingComment(false);
   };
 
   const handleDeleteComment = async (commentId: string) => {
-    const response = (await fetchData(`/api/comments/${commentId}`, {
+    // Just make the API call - WebSocket comment:deleted will sync the change
+    await fetchData(`/api/comments/${commentId}`, {
       method: "DELETE",
-    })) as DeleteResponse | null;
-    if (response?.success) {
-      setComments((prev) => prev.filter((c) => c._id !== commentId));
-    }
+    });
   };
 
   if (!task) return null;

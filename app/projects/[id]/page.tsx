@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, use } from "react";
+import { useEffect, useState, useCallback, use, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useFetch } from "@/hooks/useFetch";
@@ -122,6 +122,9 @@ export default function ProjectDetailPage({
   const [isSheetOpen, setIsSheetOpen] = useState(false);
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
+  
+  // Track locally created task IDs to prevent duplicate adds from WebSocket
+  const locallyCreatedTaskIds = useRef<Set<string>>(new Set());
 
   const loadProject = useCallback(async () => {
     const response = (await fetchData(`/api/projects/${id}`)) as ProjectDetailResponse | null;
@@ -183,7 +186,13 @@ export default function ProjectDetailPage({
   }, [searchQuery, tasks]);
 
   const handleTaskCreated = (task: Task) => {
+    // Track this task ID so WebSocket doesn't add it again
+    locallyCreatedTaskIds.current.add(task._id);
     setTasks((prev) => [task, ...prev]);
+    // Clean up after 5 seconds
+    setTimeout(() => {
+      locallyCreatedTaskIds.current.delete(task._id);
+    }, 5000);
   };
 
   const handleTaskUpdated = useCallback((updatedTask: Task) => {
@@ -199,6 +208,10 @@ export default function ProjectDetailPage({
   // Real-time task updates via WebSocket
   useTaskUpdates(id, {
     onTaskCreated: (task) => {
+      // Skip if this task was just created locally by this user
+      if (locallyCreatedTaskIds.current.has(task._id)) {
+        return;
+      }
       // Add new task to top of list (avoid duplicates)
       setTasks((prev) => {
         if (prev.some((t) => t._id === task._id)) return prev;
@@ -390,7 +403,6 @@ export default function ProjectDetailPage({
         members={project.members}
         open={isSheetOpen}
         onOpenChange={setIsSheetOpen}
-        onTaskUpdated={handleTaskUpdated}
       />
     </div>
   );

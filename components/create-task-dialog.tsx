@@ -69,7 +69,8 @@ export function CreateTaskDialog({
     });
 
     if (response?.success && response.task) {
-      onTaskCreated(response.task);
+      // Don't call onTaskCreated here - WebSocket will handle adding the task
+      // This prevents duplicate tasks from appearing
       setTitle("");
       setDescription("");
       setAssignee("unassigned");
