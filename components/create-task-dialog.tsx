@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { useFetch } from "@/hooks/useFetch";
 import type { Task } from "@/components/task-card";
 import type { Member } from "@/components/project-card";
@@ -69,6 +70,7 @@ export function CreateTaskDialog({
     });
 
     if (response?.success && response.task) {
+      toast.success("Task created successfully");
       // Don't call onTaskCreated here - WebSocket will handle adding the task
       // This prevents duplicate tasks from appearing
       setTitle("");
@@ -76,6 +78,7 @@ export function CreateTaskDialog({
       setAssignee("unassigned");
       setOpen(false);
     } else if (response && !response.success) {
+      toast.error(response.message || "Failed to create task");
       setError(response.message || "Failed to create task");
     }
   };

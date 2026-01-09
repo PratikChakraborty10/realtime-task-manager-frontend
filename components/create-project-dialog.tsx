@@ -15,6 +15,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Plus } from "lucide-react";
+import { toast } from "sonner";
 import { useFetch } from "@/hooks/useFetch";
 import type { Project } from "./project-card";
 
@@ -55,11 +56,13 @@ export function CreateProjectDialog({
     });
 
     if (response?.success && response.project) {
+      toast.success("Project created successfully");
       onProjectCreated(response.project);
       setName("");
       setDescription("");
       setOpen(false);
     } else if (response && !response.success) {
+      toast.error(response.message || "Failed to create project");
       setError(response.message || "Failed to create project");
     }
   };

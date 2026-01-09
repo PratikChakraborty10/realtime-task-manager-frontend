@@ -26,6 +26,7 @@ import {
   Trash2,
   MessageCircle,
 } from "lucide-react";
+import { toast } from "sonner";
 import { useFetch } from "@/hooks/useFetch";
 import { useAuth } from "@/context/auth-context";
 import { useCommentUpdates } from "@/hooks/useSocket";
