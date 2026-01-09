@@ -8,6 +8,9 @@ export async function GET(request: NextRequest) {
         const { searchParams } = new URL(request.url);
         const limit = searchParams.get("limit") || "20";
         const cursor = searchParams.get("cursor");
+        const status = searchParams.get("status");
+        const sortBy = searchParams.get("sortBy");
+        const sortOrder = searchParams.get("sortOrder");
 
         // Get token from Authorization header or cookies
         let token = request.headers.get("Authorization")?.replace("Bearer ", "");
@@ -26,6 +29,9 @@ export async function GET(request: NextRequest) {
 
         const params = new URLSearchParams({ limit });
         if (cursor) params.append("cursor", cursor);
+        if (status) params.append("status", status);
+        if (sortBy) params.append("sortBy", sortBy);
+        if (sortOrder) params.append("sortOrder", sortOrder);
 
         const response = await fetch(`${API_BASE_URL}/projects?${params}`, {
             method: "GET",
