@@ -145,3 +145,73 @@ export function useCommentUpdates(
         };
     }, [taskId, onCommentCreated, onCommentUpdated, onCommentDeleted]);
 }
+
+import type { Project, Member } from "@/components/project-card";
+
+interface ProjectUpdatePayload {
+    project: Project;
+}
+
+interface MemberAddedPayload {
+    project: Project;
+    member: Member;
+}
+
+interface MemberRemovedPayload {
+    project: Project;
+    memberId: string;
+}
+
+/**
+ * Hook for real-time project details and member updates
+ */
+export function useProjectUpdates(
+    projectId: string | null,
+    callbacks: {
+        onProjectUpdated?: (project: Project) => void;
+        onMemberAdded?: (member: Member) => void;
+        onMemberRemoved?: (memberId: string) => void;
+    }
+) {
+    const { onProjectUpdated, onMemberAdded, onMemberRemoved } = callbacks;
+
+    useEffect(() => {
+        if (!projectId) return;
+
+        const socket = getSocket();
+        if (!socket) return;
+
+        // Join project room
+        joinProjectRoom(projectId);
+
+        // Event handlers
+        const handleProjectUpdated = (data: ProjectUpdatePayload) => {
+            console.log("[Socket] project:updated", data);
+            onProjectUpdated?.(data.project);
+        };
+
+        const handleMemberAdded = (data: MemberAddedPayload) => {
+            console.log("[Socket] member:added", data);
+            onMemberAdded?.(data.member);
+        };
+
+        const handleMemberRemoved = (data: MemberRemovedPayload) => {
+            console.log("[Socket] member:removed", data);
+            onMemberRemoved?.(data.memberId);
+        };
+
+        // Subscribe to events
+        socket.on("project:updated", handleProjectUpdated);
+        socket.on("member:added", handleMemberAdded);
+        socket.on("member:removed", handleMemberRemoved);
+
+        // Cleanup
+        return () => {
+            leaveProjectRoom(projectId);
+            socket.off("project:updated", handleProjectUpdated);
+            socket.off("member:added", handleMemberAdded);
+            socket.off("member:removed", handleMemberRemoved);
+        };
+    }, [projectId, onProjectUpdated, onMemberAdded, onMemberRemoved]);
+}
+

@@ -23,7 +23,7 @@ import type { Project, Member } from "@/components/project-card";
 import { TaskCard, Task } from "@/components/task-card";
 import { CreateTaskDialog } from "@/components/create-task-dialog";
 import { TaskDetailSheet } from "@/components/task-detail-sheet";
-import { useTaskUpdates } from "@/hooks/useSocket";
+import { useTaskUpdates, useProjectUpdates } from "@/hooks/useSocket";
 
 interface ProjectDetailResponse {
   success: boolean;
@@ -448,6 +448,31 @@ export default function ProjectDetailPage({
         setIsSheetOpen(false);
         setSelectedTask(null);
       }
+    },
+  });
+
+  useProjectUpdates(id, {
+    onProjectUpdated: (updatedProject) => {
+      setProject(updatedProject);
+      toast.success("Project updated");
+    },
+    onMemberAdded: (member) => {
+      setProject((prev) => {
+        if (!prev) return prev;
+        if (prev.members.some((m) => m._id === member._id)) return prev;
+        return { ...prev, members: [...prev.members, member] };
+      });
+      toast.info(`${member.name} joined the project`);
+    },
+    onMemberRemoved: (memberId) => {
+      setProject((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          members: prev.members.filter((m) => m._id !== memberId),
+        };
+      });
+      toast.info("A member was removed");
     },
   });
 
