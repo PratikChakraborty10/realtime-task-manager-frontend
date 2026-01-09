@@ -53,6 +53,7 @@ export function CreateProjectDialog({
         name: name.trim(),
         description: description.trim() || undefined,
       }),
+      showErrorToast: false,
     });
 
     if (response?.success && response.project) {

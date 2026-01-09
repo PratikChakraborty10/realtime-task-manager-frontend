@@ -68,6 +68,7 @@ export function CreateTaskDialog({
         description: description.trim() || undefined,
         assignee: assignee === "unassigned" ? undefined : assignee,
       }),
+      showErrorToast: false,
     });
 
     if (response?.success && response.task) {

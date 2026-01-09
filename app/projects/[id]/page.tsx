@@ -355,6 +355,7 @@ export default function ProjectDetailPage({
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(updates),
+      showErrorToast: false,
     })) as { success: boolean; project: Project } | null;
 
     if (response?.success) {
@@ -500,6 +501,7 @@ export default function ProjectDetailPage({
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ userId }),
+      showErrorToast: false,
     })) as { success: boolean; message?: string } | null;
 
     if (response?.success) {
@@ -513,6 +515,7 @@ export default function ProjectDetailPage({
   const handleRemoveMember = async (userId: string) => {
     const response = (await fetchData(`/api/projects/${id}/members/${userId}`, {
       method: "DELETE",
+      showErrorToast: false,
     })) as { success: boolean; message?: string } | null;
 
     if (response?.success) {

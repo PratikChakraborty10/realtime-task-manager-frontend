@@ -5,8 +5,11 @@ import { useRouter } from "next/navigation";
 import { getAccessToken, removeAccessToken } from "@/lib/cookies";
 import { useAuth } from "@/context/auth-context";
 
+import { toast } from "sonner";
+
 interface FetchOptions extends RequestInit {
     requireAuth?: boolean;
+    showErrorToast?: boolean;
 }
 
 interface UseFetchResult<T> {
@@ -33,7 +36,7 @@ export function useFetch<T = unknown>(): UseFetchResult<T> {
             setError(null);
 
             try {
-                const { requireAuth = true, ...fetchOptions } = options;
+                const { requireAuth = true, showErrorToast = true, ...fetchOptions } = options;
 
                 const headers: HeadersInit = {
                     "Content-Type": "application/json",
@@ -59,14 +62,18 @@ export function useFetch<T = unknown>(): UseFetchResult<T> {
                     logout();
                     removeAccessToken();
                     router.push("/login");
-                    setError("Session expired. Please login again.");
+                    const msg = "Session expired. Please login again.";
+                    setError(msg);
+                    if (showErrorToast) toast.error(msg);
                     return null;
                 }
 
                 const result = await response.json();
 
                 if (!response.ok) {
-                    setError(result.message || "An error occurred");
+                    const msg = result.message || "An error occurred";
+                    setError(msg);
+                    if (showErrorToast) toast.error(msg);
                     return null;
                 }
 
@@ -76,6 +83,7 @@ export function useFetch<T = unknown>(): UseFetchResult<T> {
                 const errorMessage =
                     err instanceof Error ? err.message : "An unexpected error occurred";
                 setError(errorMessage);
+                if (options.showErrorToast !== false) toast.error(errorMessage);
                 return null;
             } finally {
                 setIsLoading(false);
