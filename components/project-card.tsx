@@ -12,19 +12,26 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { MoreHorizontal, CheckCircle2, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
-interface Member {
+import { ProjectStatus } from "@/lib/enums";
+
+export interface Member {
   _id: string;
   name: string;
   email: string;
+  role?: "ADMIN" | "USER"; // TODO: Use UserRole enum here later
 }
 
-interface Project {
+export interface Project {
   _id: string;
   name: string;
   description?: string;
-  status: "ACTIVE" | "ON_HOLD" | "COMPLETED" | "ARCHIVED";
+  status: ProjectStatus;
   members: Member[];
-  createdBy: Member;
+  createdBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -33,28 +40,25 @@ interface ProjectCardProps {
   project: Project;
 }
 
-const statusConfig: Record<
-  Project["status"],
-  { label: string; dotColor: string; borderColor: string }
-> = {
-  ACTIVE: {
+const statusConfig = {
+  [ProjectStatus.ACTIVE]: {
     label: "Active",
-    dotColor: "bg-emerald-500",
+    className: "bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 border-emerald-500/20",
     borderColor: "border-l-emerald-500",
   },
-  ON_HOLD: {
+  [ProjectStatus.ON_HOLD]: {
     label: "On Hold",
-    dotColor: "bg-amber-500",
+    className: "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 border-amber-500/20",
     borderColor: "border-l-amber-500",
   },
-  COMPLETED: {
+  [ProjectStatus.COMPLETED]: {
     label: "Completed",
-    dotColor: "bg-blue-500",
+    className: "bg-blue-500/10 text-blue-500 hover:bg-blue-500/20 border-blue-500/20",
     borderColor: "border-l-blue-500",
   },
-  ARCHIVED: {
+  [ProjectStatus.ARCHIVED]: {
     label: "Archived",
-    dotColor: "bg-gray-400",
+    className: "bg-slate-500/10 text-slate-500 hover:bg-slate-500/20 border-slate-500/20",
     borderColor: "border-l-gray-400",
   },
 };
@@ -85,7 +89,7 @@ function getTimeAgo(dateString: string): string {
 }
 
 export function ProjectCard({ project }: ProjectCardProps) {
-  const status = statusConfig[project.status] || statusConfig.ACTIVE;
+  const status = statusConfig[project.status] || statusConfig[ProjectStatus.ACTIVE];
   const maxVisibleAvatars = 3;
   const visibleMembers = project.members.slice(0, maxVisibleAvatars);
   const remainingCount = project.members.length - maxVisibleAvatars;
@@ -97,13 +101,11 @@ export function ProjectCard({ project }: ProjectCardProps) {
       >
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
-            <Badge
-              variant="secondary"
-              className="flex items-center gap-1.5 font-normal text-xs"
+            <div
+              className={`px-3 py-1 rounded-full text-xs font-medium border ${status.className}`}
             >
-              <span className={`h-2 w-2 rounded-full ${status.dotColor}`} />
               {status.label}
-            </Badge>
+            </div>
             <Button
               variant="ghost"
               size="icon"
@@ -200,4 +202,4 @@ export function ProjectCard({ project }: ProjectCardProps) {
   );
 }
 
-export type { Project, Member };
+

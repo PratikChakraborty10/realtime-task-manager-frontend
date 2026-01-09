@@ -18,20 +18,24 @@ interface Assignee {
   email: string;
 }
 
-interface CreatedBy {
-  _id: string;
-  name: string;
-  email: string;
-}
+import { TaskStatus } from "@/lib/enums";
 
 export interface Task {
   _id: string;
   title: string;
   description?: string;
-  status: "OPEN" | "IN_PROGRESS" | "ON_HOLD" | "CLOSED";
-  assignee?: Assignee;
+  status: TaskStatus;
+  assignee?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
   project: string;
-  createdBy: CreatedBy;
+  createdBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
   createdAt: string;
   updatedAt: string;
 }
@@ -42,33 +46,26 @@ interface TaskCardProps {
   onDelete?: (taskId: string) => void;
 }
 
-const statusConfig: Record<
-  Task["status"],
-  { label: string; bgColor: string; textColor: string; dotColor: string }
-> = {
-  OPEN: {
+const statusConfig = {
+  [TaskStatus.OPEN]: {
     label: "Open",
-    bgColor: "bg-slate-100",
-    textColor: "text-slate-700",
     dotColor: "bg-slate-500",
+    badgeVariant: "secondary" as const,
   },
-  IN_PROGRESS: {
+  [TaskStatus.IN_PROGRESS]: {
     label: "In Progress",
-    bgColor: "bg-blue-100",
-    textColor: "text-blue-700",
     dotColor: "bg-blue-500",
+    badgeVariant: "default" as const,
   },
-  ON_HOLD: {
+  [TaskStatus.ON_HOLD]: {
     label: "On Hold",
-    bgColor: "bg-amber-100",
-    textColor: "text-amber-700",
     dotColor: "bg-amber-500",
+    badgeVariant: "outline" as const,
   },
-  CLOSED: {
+  [TaskStatus.CLOSED]: {
     label: "Closed",
-    bgColor: "bg-emerald-100",
-    textColor: "text-emerald-700",
     dotColor: "bg-emerald-500",
+    badgeVariant: "secondary" as const,
   },
 };
 
@@ -93,7 +90,7 @@ function formatDate(dateString: string): string {
 }
 
 export function TaskCard({ task, onClick, onDelete }: TaskCardProps) {
-  const status = statusConfig[task.status] || statusConfig.OPEN;
+  const status = statusConfig[task.status] || statusConfig[TaskStatus.OPEN];
 
   const handleDelete = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -119,11 +116,14 @@ export function TaskCard({ task, onClick, onDelete }: TaskCardProps) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2 mb-2">
                   <Badge
-                    className={`${status.bgColor} ${status.textColor} border-0 text-[10px] font-semibold px-2 py-0.5 flex items-center gap-1`}
-                  >
-                    <span className={`h-1.5 w-1.5 rounded-full ${status.dotColor}`} />
-                    {status.label}
-                  </Badge>
+              variant={status.badgeVariant}
+              className="flex items-center gap-1.5 font-medium"
+            >
+              <div
+                className={`h-1.5 w-1.5 rounded-full ${status.dotColor}`}
+              />
+              {status.label}
+            </Badge>
                 </div>
                 <h4 className="font-semibold text-sm mb-1 group-hover:text-primary transition-colors line-clamp-1">
                   {task.title}

@@ -39,14 +39,15 @@ interface TasksResponse {
   };
 }
 
-const statusConfig: Record<
-  Project["status"],
-  { label: string; dotColor: string }
-> = {
-  ACTIVE: { label: "Active", dotColor: "bg-emerald-500" },
-  ON_HOLD: { label: "On Hold", dotColor: "bg-amber-500" },
-  COMPLETED: { label: "Completed", dotColor: "bg-blue-500" },
-  ARCHIVED: { label: "Archived", dotColor: "bg-gray-400" },
+import { ProjectStatus } from "@/lib/enums";
+
+// ... existing imports ...
+
+const statusConfig = {
+  [ProjectStatus.ACTIVE]: { label: "Active", dotColor: "bg-emerald-500" },
+  [ProjectStatus.ON_HOLD]: { label: "On Hold", dotColor: "bg-amber-500" },
+  [ProjectStatus.COMPLETED]: { label: "Completed", dotColor: "bg-blue-500" },
+  [ProjectStatus.ARCHIVED]: { label: "Archived", dotColor: "bg-gray-400" },
 };
 
 function getInitials(name: string, email: string): string {

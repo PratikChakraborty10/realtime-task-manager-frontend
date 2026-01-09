@@ -24,6 +24,7 @@ import {
 import { Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useFetch } from "@/hooks/useFetch";
+import { TaskStatus } from "@/lib/enums";
 import type { Task } from "@/components/task-card";
 import type { Member } from "@/components/project-card";
 

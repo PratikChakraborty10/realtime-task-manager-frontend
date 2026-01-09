@@ -66,11 +66,15 @@ interface TaskDetailSheetProps {
 // Note: TaskUpdateResponse, CommentAddResponse, DeleteResponse interfaces removed
 // since we no longer process API responses locally - WebSocket handles all updates
 
-const statusConfig: Record<Task["status"], { label: string; dotColor: string }> = {
-  OPEN: { label: "Open", dotColor: "bg-slate-500" },
-  IN_PROGRESS: { label: "In Progress", dotColor: "bg-blue-500" },
-  ON_HOLD: { label: "On Hold", dotColor: "bg-amber-500" },
-  CLOSED: { label: "Closed", dotColor: "bg-emerald-500" },
+import { TaskStatus, ProjectStatus } from "@/lib/enums";
+
+// ... existing code ...
+
+const statusConfig = {
+  [TaskStatus.OPEN]: { label: "Open", dotColor: "bg-slate-500" },
+  [TaskStatus.IN_PROGRESS]: { label: "In Progress", dotColor: "bg-blue-500" },
+  [TaskStatus.ON_HOLD]: { label: "On Hold", dotColor: "bg-amber-500" },
+  [TaskStatus.CLOSED]: { label: "Closed", dotColor: "bg-emerald-500" },
 };
 
 function getInitials(name: string, email: string): string {
@@ -256,10 +260,10 @@ export function TaskDetailSheet({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="OPEN">Open</SelectItem>
-                <SelectItem value="IN_PROGRESS">In Progress</SelectItem>
-                <SelectItem value="ON_HOLD">On Hold</SelectItem>
-                <SelectItem value="CLOSED">Closed</SelectItem>
+                <SelectItem value={TaskStatus.OPEN}>Open</SelectItem>
+                <SelectItem value={TaskStatus.IN_PROGRESS}>In Progress</SelectItem>
+                <SelectItem value={TaskStatus.ON_HOLD}>On Hold</SelectItem>
+                <SelectItem value={TaskStatus.CLOSED}>Closed</SelectItem>
               </SelectContent>
             </Select>
           </div>
