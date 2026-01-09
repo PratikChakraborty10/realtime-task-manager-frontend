@@ -57,7 +57,97 @@ function getInitials(name: string, email: string): string {
   return email[0].toUpperCase();
 }
 
-function MembersSidebar({ members, createdBy }: { members: Member[]; createdBy: Member }) {
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Plus, X, Pencil, Check, Loader2, Search as SearchIcon } from "lucide-react";
+import { toast } from "sonner";
+
+interface LookedUpUser {
+  _id: string;
+  name: string;
+  email: string;
+}
+
+function MembersSidebar({ 
+  members, 
+  createdBy, 
+  onAddMember, 
+  onRemoveMember,
+  canManage 
+}: { 
+  members: Member[]; 
+  createdBy: Member;
+  onAddMember: (userId: string) => Promise<void>;
+  onRemoveMember: (userId: string) => Promise<void>;
+  canManage: boolean;
+}) {
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [email, setEmail] = useState("");
+  const [isSearching, setIsSearching] = useState(false);
+  const [isAdding, setIsAdding] = useState(false);
+  const [foundUser, setFoundUser] = useState<LookedUpUser | null>(null);
+  const [error, setError] = useState("");
+
+  const handleSearch = async () => {
+    if (!email.trim()) return;
+    
+    setIsSearching(true);
+    setError("");
+    setFoundUser(null);
+
+    try {
+      const response = await fetch(`/api/users/lookup?email=${encodeURIComponent(email)}`);
+      const data = await response.json();
+
+      if (data.success && data.user) {
+        // Check if user is already a member
+        if (members.some(m => m._id === data.user._id)) {
+          setError("This user is already a member of this project.");
+        } else {
+          setFoundUser(data.user);
+        }
+      } else {
+        setError(data.message || "User not found");
+      }
+    } catch {
+      setError("Failed to search for user");
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  const handleAdd = async () => {
+    if (!foundUser) return;
+    setIsAdding(true);
+    await onAddMember(foundUser._id);
+    setIsAdding(false);
+    setIsAddOpen(false);
+    resetForm();
+  };
+
+  const resetForm = () => {
+    setEmail("");
+    setFoundUser(null);
+    setError("");
+  };
+
+  const handleOpenChange = (open: boolean) => {
+    setIsAddOpen(open);
+    if (!open) resetForm();
+  };
+
   return (
     <div className="w-80 shrink-0 border-l bg-muted/20">
       <div className="p-5 h-full">
@@ -67,6 +157,103 @@ function MembersSidebar({ members, createdBy }: { members: Member[]; createdBy: 
           <Badge variant="secondary" className="ml-auto text-xs">
             {members.length}
           </Badge>
+          {canManage && (
+            <Dialog open={isAddOpen} onOpenChange={handleOpenChange}>
+              <DialogTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 ml-2">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add Team Member</DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 py-4">
+                  <p className="text-sm text-muted-foreground">
+                    Search for a user by their email address to add them to this project.
+                  </p>
+                  
+                  {/* Search Input */}
+                  <div className="flex gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        type="email"
+                        placeholder="Enter email address..."
+                        value={email}
+                        onChange={(e) => {
+                          setEmail(e.target.value);
+                          setError("");
+                          setFoundUser(null);
+                        }}
+                        onKeyDown={(e) => e.key === "Enter" && handleSearch()}
+                        className="pr-10"
+                      />
+                    </div>
+                    <Button 
+                      onClick={handleSearch} 
+                      disabled={isSearching || !email.trim()}
+                      size="icon"
+                    >
+                      {isSearching ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <SearchIcon className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+
+                  {/* Error Message */}
+                  {error && (
+                    <div className="text-sm text-destructive bg-destructive/10 px-3 py-2 rounded-md">
+                      {error}
+                    </div>
+                  )}
+
+                  {/* Found User Card */}
+                  {foundUser && (
+                    <div className="border rounded-lg p-4 bg-muted/30">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="h-12 w-12">
+                          <AvatarFallback className="text-sm font-medium bg-gradient-to-br from-primary to-primary/70 text-primary-foreground">
+                            {getInitials(foundUser.name, foundUser.email)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium truncate">{foundUser.name}</p>
+                          <p className="text-sm text-muted-foreground truncate">
+                            {foundUser.email}
+                          </p>
+                        </div>
+                        <Button 
+                          onClick={handleAdd} 
+                          disabled={isAdding}
+                          size="sm"
+                          className="shrink-0"
+                        >
+                          {isAdding ? (
+                            <>
+                              <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                              Adding...
+                            </>
+                          ) : (
+                            <>
+                              <Plus className="h-3 w-3 mr-1" />
+                              Add
+                            </>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => handleOpenChange(false)}>
+                    Cancel
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+          )}
         </div>
         <div className="space-y-2">
           {members.map((member) => {
@@ -74,7 +261,7 @@ function MembersSidebar({ members, createdBy }: { members: Member[]; createdBy: 
             return (
               <div
                 key={member._id}
-                className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-background transition-colors"
+                className="flex items-center gap-3 p-2.5 rounded-lg hover:bg-background transition-colors group"
               >
                 <Avatar className="h-9 w-9">
                   <AvatarFallback className="text-xs font-medium bg-gradient-to-br from-primary to-primary/70 text-primary-foreground">
@@ -94,6 +281,20 @@ function MembersSidebar({ members, createdBy }: { members: Member[]; createdBy: 
                     {member.email}
                   </p>
                 </div>
+                {canManage && !isOwner && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                    onClick={() => {
+                      if (confirm("Remove this member?")) {
+                        onRemoveMember(member._id);
+                      }
+                    }}
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
             );
           })}
@@ -110,7 +311,7 @@ export default function ProjectDetailPage({
 }) {
   const { id } = use(params);
   const router = useRouter();
-  const { isAuthenticated, isLoading: authLoading } = useAuth();
+  const { isAuthenticated, isLoading: authLoading, user } = useAuth();
   const { fetchData } = useFetch();
 
   const [project, setProject] = useState<Project | null>(null);
@@ -124,16 +325,46 @@ export default function ProjectDetailPage({
   const [cursor, setCursor] = useState<string | null>(null);
   const [hasMore, setHasMore] = useState(false);
   
-  // Track locally created task IDs to prevent duplicate adds from WebSocket
+  // Edit states
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [editingName, setEditingName] = useState("");
+  const [isEditingDesc, setIsEditingDesc] = useState(false);
+  const [editingDesc, setEditingDesc] = useState("");
+
   const locallyCreatedTaskIds = useRef<Set<string>>(new Set());
+
+  const canManage = project ? (user?.id === project.createdBy._id || user?.role === "ADMIN") : false;
 
   const loadProject = useCallback(async () => {
     const response = (await fetchData(`/api/projects/${id}`)) as ProjectDetailResponse | null;
     if (response?.success) {
       setProject(response.project);
+      setEditingName(response.project.name);
+      setEditingDesc(response.project.description || "");
     }
     setIsLoading(false);
   }, [fetchData, id]);
+
+  const updateProject = async (updates: Partial<Project>) => {
+    if (!project) return;
+    
+    // Optimistic update
+    setProject({ ...project, ...updates });
+
+    const response = (await fetchData(`/api/projects/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    })) as { success: boolean; project: Project } | null;
+
+    if (response?.success) {
+      toast.success("Project updated");
+    } else {
+      toast.error("Failed to update project");
+      // Revert on error
+      loadProject();
+    }
+  };
 
   const loadTasks = useCallback(
     async (nextCursor: string | null = null) => {
@@ -170,7 +401,6 @@ export default function ProjectDetailPage({
     }
   }, [authLoading, isAuthenticated, router, loadProject, loadTasks]);
 
-  // Filter tasks
   useEffect(() => {
     if (searchQuery.trim() === "") {
       setFilteredTasks(tasks);
@@ -187,10 +417,8 @@ export default function ProjectDetailPage({
   }, [searchQuery, tasks]);
 
   const handleTaskCreated = (task: Task) => {
-    // Track this task ID so WebSocket doesn't add it again
     locallyCreatedTaskIds.current.add(task._id);
     setTasks((prev) => [task, ...prev]);
-    // Clean up after 5 seconds
     setTimeout(() => {
       locallyCreatedTaskIds.current.delete(task._id);
     }, 5000);
@@ -200,20 +428,14 @@ export default function ProjectDetailPage({
     setTasks((prev) =>
       prev.map((t) => (t._id === updatedTask._id ? updatedTask : t))
     );
-    // Update selected task if it's the one being updated
     setSelectedTask((current) =>
       current?._id === updatedTask._id ? updatedTask : current
     );
   }, []);
 
-  // Real-time task updates via WebSocket
   useTaskUpdates(id, {
     onTaskCreated: (task) => {
-      // Skip if this task was just created locally by this user
-      if (locallyCreatedTaskIds.current.has(task._id)) {
-        return;
-      }
-      // Add new task to top of list (avoid duplicates)
+      if (locallyCreatedTaskIds.current.has(task._id)) return;
       setTasks((prev) => {
         if (prev.some((t) => t._id === task._id)) return prev;
         return [task, ...prev];
@@ -235,6 +457,7 @@ export default function ProjectDetailPage({
     });
     if (response) {
       setTasks((prev) => prev.filter((t) => t._id !== taskId));
+      toast.success("Task deleted");
       if (selectedTask?._id === taskId) {
         setIsSheetOpen(false);
         setSelectedTask(null);
@@ -245,6 +468,40 @@ export default function ProjectDetailPage({
   const handleTaskClick = (task: Task) => {
     setSelectedTask(task);
     setIsSheetOpen(true);
+  };
+
+  const handleAddMember = async (userId: string) => {
+    const response = (await fetchData(`/api/projects/${id}/members`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    })) as { success: boolean; message?: string } | null;
+
+    if (response?.success) {
+      toast.success("Member added");
+      loadProject(); // Reload memberships
+    } else {
+      toast.error(response?.message || "Failed to add member");
+    }
+  };
+
+  const handleRemoveMember = async (userId: string) => {
+    const response = (await fetchData(`/api/projects/${id}/members/${userId}`, {
+      method: "DELETE",
+    })) as { success: boolean; message?: string } | null;
+
+    if (response?.success) {
+      toast.success("Member removed");
+      // Optimistically remove
+      if (project) {
+        setProject({
+          ...project,
+          members: project.members.filter(m => m._id !== userId)
+        });
+      }
+    } else {
+      toast.error("Failed to remove member");
+    }
   };
 
   if (authLoading || isLoading) {
@@ -298,17 +555,126 @@ export default function ProjectDetailPage({
       <div className="border-b bg-gradient-to-b from-muted/30 to-transparent">
         <div className="container mx-auto px-4 py-6 max-w-7xl">
           <div className="flex items-start justify-between">
-            <div>
+            <div className="flex-1 mr-8">
               <div className="flex items-center gap-3 mb-2">
-                <h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
-                <Badge variant="secondary" className="flex items-center gap-1.5">
-                  <span className={`h-2 w-2 rounded-full ${projectStatus.dotColor}`} />
-                  {projectStatus.label}
-                </Badge>
+                {isEditingName ? (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      value={editingName}
+                      onChange={(e) => setEditingName(e.target.value)}
+                      className="h-8 text-2xl font-bold w-[300px]"
+                      autoFocus
+                    />
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        updateProject({ name: editingName });
+                        setIsEditingName(false);
+                      }}
+                    >
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        setEditingName(project.name);
+                        setIsEditingName(false);
+                      }}
+                    >
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 group">
+                    <h1 className="text-2xl font-bold tracking-tight">{project.name}</h1>
+                    {canManage && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                        onClick={() => setIsEditingName(true)}
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                {canManage ? (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Badge 
+                        variant="secondary" 
+                        className="flex items-center gap-1.5 cursor-pointer hover:bg-secondary/80 transition-colors"
+                      >
+                        <span className={`h-2 w-2 rounded-full ${projectStatus.dotColor}`} />
+                        {projectStatus.label}
+                      </Badge>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      {Object.entries(statusConfig).map(([status, config]) => (
+                        <DropdownMenuItem 
+                          key={status}
+                          onClick={() => updateProject({ status: status as ProjectStatus })}
+                        >
+                          <span className={`h-2 w-2 rounded-full mr-2 ${config.dotColor}`} />
+                          {config.label}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                ) : (
+                  <Badge variant="secondary" className="flex items-center gap-1.5">
+                    <span className={`h-2 w-2 rounded-full ${projectStatus.dotColor}`} />
+                    {projectStatus.label}
+                  </Badge>
+                )}
               </div>
-              {project.description && (
-                <p className="text-muted-foreground max-w-2xl">{project.description}</p>
+
+              {isEditingDesc ? (
+                <div className="flex items-center gap-2 mt-2">
+                  <Input
+                    value={editingDesc}
+                    onChange={(e) => setEditingDesc(e.target.value)}
+                    className="h-8 max-w-2xl"
+                    placeholder="Add a description..."
+                    autoFocus
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      updateProject({ description: editingDesc });
+                      setIsEditingDesc(false);
+                    }}
+                  >
+                    Save
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => {
+                      setEditingDesc(project.description || "");
+                      setIsEditingDesc(false);
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <div className="group relative">
+                  <p 
+                    className={`text-muted-foreground max-w-2xl ${canManage ? "cursor-pointer hover:text-foreground" : ""}`}
+                    onClick={() => canManage && setIsEditingDesc(true)}
+                  >
+                    {project.description || (canManage ? "Add a description..." : "")}
+                    {canManage && (
+                      <Pencil className="h-3 w-3 inline-block ml-2 opacity-0 group-hover:opacity-100 transition-opacity" />
+                    )}
+                  </p>
+                </div>
               )}
+
               <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
                 <div className="flex items-center gap-1.5">
                   <ListTodo className="h-4 w-4" />
@@ -397,7 +763,13 @@ export default function ProjectDetailPage({
           </div>
 
           {/* Members Sidebar */}
-          <MembersSidebar members={project.members} createdBy={project.createdBy} />
+          <MembersSidebar 
+            members={project.members} 
+            createdBy={project.createdBy} 
+            onAddMember={handleAddMember}
+            onRemoveMember={handleRemoveMember}
+            canManage={canManage}
+          />
         </div>
       </div>
 
