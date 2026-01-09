@@ -7,12 +7,13 @@ import { useAuth } from "@/context/auth-context";
 import { Button } from "@/components/ui/button";
 import { removeAccessToken } from "@/lib/cookies";
 import { GlobalSearch } from "@/components/global-search";
-import { Search } from "lucide-react";
+import { Search, X } from "lucide-react";
 
 export function Navbar() {
   const router = useRouter();
   const { isAuthenticated, isLoading, logout, user } = useAuth();
   const [searchOpen, setSearchOpen] = useState(false);
+  const [isBannerVisible, setIsBannerVisible] = useState(true);
 
   const handleLogout = async () => {
     try {
@@ -27,6 +28,24 @@ export function Navbar() {
 
   return (
     <>
+        {/* Free Tier Warning Banner */}
+      {isBannerVisible && (
+        <div className="fixed top-[55px] z-40 w-full bg-yellow-100/90 backdrop-blur-sm border-b border-yellow-200 px-4 py-1.5 flex items-center justify-center gap-2">
+          <div className="text-center text-xs font-medium text-yellow-800 flex items-center gap-2">
+            <span className="shrink-0">⚠️</span>
+            <span>
+              Backend hosted on free instance. Cold starts may take 40-55s if idle.
+            </span>
+          </div>
+          <button 
+            onClick={() => setIsBannerVisible(false)}
+            className="ml-auto md:ml-2 hover:bg-yellow-200/50 rounded p-0.5 transition-colors"
+          >
+            <X className="h-3 w-3 text-yellow-800" />
+            <span className="sr-only">Dismiss</span>
+          </button>
+        </div>
+      )}
       <header className="w-full px-4 py-3 backdrop-blur-sm bg-background/80 border-b z-50 fixed top-0">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <Link href="/" className="text-xl font-bold hover:opacity-80 transition-opacity">
@@ -81,6 +100,8 @@ export function Navbar() {
           </nav>
         </div>
       </header>
+
+      
 
       {/* Global Search Modal */}
       <GlobalSearch open={searchOpen} onOpenChange={setSearchOpen} />
